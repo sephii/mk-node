@@ -6,7 +6,8 @@ environment with the dependencies defined in `package-lock.json`. It provides
 convenience (not having to keep several .nix files up-to-date with
 `package.json`) at the expense of longer build times.
 
-The package provides a single function `mkNodeModules`, that takes the following arguments:
+The package provides an overlay with a single function `mkNodeModules`, that
+takes the following arguments:
 
 * **src**: the path to your project. Usually `./.`
 * **node2nix** (optional): `node2nix` package to use. Defaults to `pkgs.nodePackages.node2nix`
@@ -26,8 +27,9 @@ Assuming you have a project with a `package.json` and `package-lock.json`, you c
   outputs = { self, nixpkgs, mk-node }:
     let
       system = "x86_64-linux";
-      nodejs = nixpkgs.legacyPackages.${system}.nodejs-16_x;
-      nodeModules = mk-node.${system}.mkNodeModules { src = ./.; inherit nodejs; };
+      pkgs = import nixpkgs { inherit system; overlays = [ mk-node.overlay ]; };
+      nodejs = pkgs.nodejs-16_x;
+      nodeModules = pkgs.mkNodeModules { src = ./.; inherit nodejs; };
     in {
       # Include anything else you need for your derivation (eg. use `buildPythonApplication`, `mkPoetryApplication`, etc)
       defaultPackage.${system} = stdenv.mkDerivation {

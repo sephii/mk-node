@@ -9,9 +9,9 @@ convenience (not having to keep several .nix files up-to-date with
 The package provides a single function `mkNodeModules`, that takes the following arguments:
 
 * **src**: the path to your project. Usually `./.`
-* node2nix (optional): `node2nix` package to use. Defaults to `pkgs.nodePackages.node2nix`
-* nodejs (optional): `nodejs` package to use. Defaults to `pkgs.nodePackages.nodejs-16_x`
-* fixNodeGyp (default: `false`): set to `true` if you’re having an installation
+* **node2nix** (optional): `node2nix` package to use. Defaults to `pkgs.nodePackages.node2nix`
+* **nodejs** (optional): `nodejs` package to use. Defaults to `pkgs.nodePackages.nodejs-16_x`
+* **fixNodeGyp** (default: `false`): set to `true` if you’re having an installation
   error with node-gyp. See [this
   issue](https://github.com/svanderburg/node2nix/issues/275) for more
   information
@@ -27,7 +27,7 @@ Assuming you have a project with a `package.json` and `package-lock.json`, you c
     let
       system = "x86_64-linux";
       nodejs = nixpkgs.legacyPackages.${system}.nodejs-16_x;
-      nodeModules = mk-node.${system}.mkNodeModules { src = ./.; inherit nodejs };
+      nodeModules = mk-node.${system}.mkNodeModules { src = ./.; inherit nodejs; };
     in {
       # Include anything else you need for your derivation (eg. use `buildPythonApplication`, `mkPoetryApplication`, etc)
       defaultPackage.${system} = stdenv.mkDerivation {
@@ -39,7 +39,6 @@ Assuming you have a project with a `package.json` and `package-lock.json`, you c
           rm -rf ./node_modules
         '';
       };
-    }
-  }
+    };
 }
 ```

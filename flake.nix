@@ -13,7 +13,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let pkgs = nixpkgs.legacyPackages.${system};
       in {
-        mkNodeModules = { src, nodejs ? pkgs.nodejs-14_x
+        mkNodeModules = { src, nodejs ? pkgs.nodejs-16_x
           , node2nix ? pkgs.nodePackages.node2nix, fixNodeGyp ? false }:
           let
             packageFiles = builtins.filterSource (path: type:

@@ -10,7 +10,7 @@ The package provides a single function `mkNodeModules`, that takes the following
 
 * **src**: the path to your project. Usually `./.`
 * node2nix (optional): `node2nix` package to use. Defaults to `pkgs.nodePackages.node2nix`
-* nodejs (optional): `nodejs` package to use. Defaults to `pkgs.nodePackages.nodejs-14_x`
+* nodejs (optional): `nodejs` package to use. Defaults to `pkgs.nodePackages.nodejs-16_x`
 * fixNodeGyp (default: `false`): set to `true` if you’re having an installation
   error with node-gyp. See [this
   issue](https://github.com/svanderburg/node2nix/issues/275) for more

@@ -1,44 +1,45 @@
-Bundle your node files as a Nix derivation
-==========================================
+# Bundle your node files as a Nix derivation
 
 This is a thin wrapper around
 [`node2nix`](https://github.com/svanderburg/node2nix) that creates a node
-environment with the dependencies defined in `package-lock.json` and then runs a
-custom compilation command to produce dist files.
+environment with the dependencies defined in `package-lock.json`. It provides
+convenience (not having to keep several .nix files up-to-date with
+`package.json`) at the expense of longer build times.
 
-The package provides a single function `mkNodeDist`, that takes the following arguments:
+The package provides a single function `mkNodeModules`, that takes the following arguments:
 
 * **src**: the path to your project. Usually `./.`
-* **installScript**: the script to create your bundle. This may change depending
-  on the bundler you’re using (webpack, gulp, esbuild, etc). Note that your
-  script is also responsible of copying the files to `$out` since the library
-  cannot guess where your dist files are generated
 * node2nix (optional): `node2nix` package to use. Defaults to `pkgs.nodePackages.node2nix`
 * nodejs (optional): `nodejs` package to use. Defaults to `pkgs.nodePackages.nodejs-14_x`
+* fixNodeGyp (default: `false`): set to `true` if you’re having an installation
+  error with node-gyp. See [this
+  issue](https://github.com/svanderburg/node2nix/issues/275) for more
+  information
 
-Example
--------
+## Example
 
-Assuming you have a project with a `package.json` and `package-lock.json` and
-you’re using webpack, you can use the following to generate your bundle:
+Assuming you have a project with a `package.json` and `package-lock.json`, you can use the following:
 
 ``` nix
-let
-  pkgs = import <nixpkgs> {};
-  mkNode = callPackage (pkgs.fetchFromGitHub {
-    owner = "sephii";
-    repo = "mk-node";
-    rev = "main";
-    # Use `nix-prefetch-git --url https://github.com/sephii/mk-node --rev refs/heads/main` to get the correct hash
-    sha256 = "0000000000000000000000000000000000000000000000000000";
-  }) { };
-in
-  mkNode.mkNodeDist {
-    src = ./.;
-    installScript = ''
-      NODE_ENV=production webpack
-      mkdir $out
-      cp -r dist/{stylesheets,images,javascripts} $out/
-    '';
+{
+  inputs.mk-node.url = "github:sephii/mk-node";
+  outputs = { self, nixpkgs, mk-node }:
+    let
+      system = "x86_64-linux";
+      nodejs = nixpkgs.legacyPackages.${system}.nodejs-16_x;
+      nodeModules = mk-node.${system}.mkNodeModules { src = ./.; inherit nodejs };
+    in {
+      # Include anything else you need for your derivation (eg. use `buildPythonApplication`, `mkPoetryApplication`, etc)
+      defaultPackage.${system} = stdenv.mkDerivation {
+        buildPhase = ''
+          ln -s ${nodeModules}/lib/node_modules ./node_modules
+          export PATH="${nodeModules}/bin:$PATH"
+          ${nodejs}/bin/npm run build
+
+          rm -rf ./node_modules
+        '';
+      };
+    }
   }
+}
 ```

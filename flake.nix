@@ -11,10 +11,10 @@
 
   outputs = { self, nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = import nixpkgs { inherit system; };
+      let pkgs = nixpkgs.legacyPackages.${system};
       in {
-        defaultPackage = { src, installScript, nodejs ? pkgs.nodejs-14_x
-          , node2nix ? pkgs.nodePackages.node2nix }:
+        mkNodeModules = { src, nodejs ? pkgs.nodejs-14_x
+          , node2nix ? pkgs.nodePackages.node2nix, fixNodeGyp ? false }:
           let
             packageFiles = builtins.filterSource (path: type:
               builtins.elem (baseNameOf path) [
@@ -45,18 +45,17 @@
               production = true;
               src = packageFiles;
               dontNpmInstall = true;
+              # https://github.com/svanderburg/node2nix/issues/275
+              buildInputs = if fixNodeGyp then
+                [ pkgs.nodePackages.node-gyp-build ]
+              else
+                [ ];
+              preRebuild = pkgs.lib.optionalString fixNodeGyp ''
+                sed -i -e "s|#!/usr/bin/env node|#! ${nodejs}/bin/node|" node_modules/node-gyp-build/bin.js
+              '';
             };
 
             nodeShell = nodeEnv.buildNodeShell nodeArgs;
-          in pkgs.stdenv.mkDerivation {
-            inherit src;
-
-            name = "node-dist";
-            installPhase = ''
-              ln -s ${nodeShell.nodeDependencies}/lib/node_modules ./node_modules
-              export PATH="${nodeShell.nodeDependencies}/bin:$PATH"
-              ${installScript}
-            '';
-          };
+          in nodeShell.nodeDependencies;
       });
 }
